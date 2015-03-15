@@ -429,6 +429,8 @@ public class Podcast extends FeedEntity implements Comparable<Podcast> {
                         case RSS.ITEM:
                             parseAndAddEpisode(parser, newEpisodes, episodeIndex++);
                             break;
+                        default:
+                            parse(parser, tagName);
                     }
                 }
 
@@ -444,6 +446,19 @@ public class Podcast extends FeedEntity implements Comparable<Podcast> {
             if (name == null || name.trim().isEmpty())
                 name = url;
         }
+    }
+
+    /**
+     * Called for tags not consumed by the podcast parsing. Use this in sub-classes,
+     * if you need to get more data from the podcast feed. This will <em>not</em> be
+     * called for tags the podcast consumes itself.
+     *
+     * @param parser  The current parser. Make sure to only consume the current tag!
+     * @param tagName The current tag's name, all lower case.
+     */
+    protected void parse(XmlPullParser parser, String tagName) throws XmlPullParserException, IOException {
+        // Do nothing, subclass might want to use this hook
+        // to read other information they care about from the feed
     }
 
     protected void parseLogo(@NonNull XmlPullParser parser) throws IOException {

@@ -227,6 +227,12 @@ public class LoadSuggestionsTask extends LoadRemoteFileTask<Void, List<Suggestio
             suggestion.setGenre(Genre.forLabel(json.getString(JSON.CATEGORY)));
             suggestion.setExplicit(EXPLICIT_POSITIVE_STRING.equals(json.getString(JSON.EXPLICIT)
                     .toLowerCase(Locale.US)));
+
+            // TODO remove!
+            if (json.has("votes"))
+                suggestion.votes = json.getInt("votes");
+            if (json.has("added"))
+                suggestion.added = json.getString("added");
         } catch (JSONException e) {
             Log.d(TAG, "JSON parsing failed for: " + suggestion, e);
 

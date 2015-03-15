@@ -31,6 +31,10 @@ public class Suggestion extends Podcast {
      */
     protected boolean featured = false;
 
+    // TODO remove!
+    public int votes;
+    public String added;
+
     /**
      * Create new suggestion. See {@link Podcast} for details.
      *
