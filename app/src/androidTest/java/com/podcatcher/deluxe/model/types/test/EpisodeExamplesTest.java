@@ -177,10 +177,10 @@ public class EpisodeExamplesTest extends SuggestionsAsExamplesTest {
                 "http://ttbook.org/book/radio/rss/feed");
         Utils.loadAndWait(know);
 
-        examplePodcasts.add(extra);
-        examplePodcasts.add(wtf);
-        examplePodcasts.add(ru);
-        examplePodcasts.add(know);
+//        examplePodcasts.add(extra);
+//        examplePodcasts.add(wtf);
+//        examplePodcasts.add(ru);
+//        examplePodcasts.add(know);
 
         for (Podcast podcast : examplePodcasts) {
             for (Episode episode : podcast.getEpisodes()) {

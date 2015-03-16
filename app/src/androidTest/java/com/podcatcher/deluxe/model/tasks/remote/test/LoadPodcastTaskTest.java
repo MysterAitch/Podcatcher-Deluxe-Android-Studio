@@ -26,6 +26,7 @@ import com.podcatcher.deluxe.model.tasks.remote.LoadPodcastTask.PodcastLoadError
 import com.podcatcher.deluxe.model.test.Utils;
 import com.podcatcher.deluxe.model.types.Podcast;
 import com.podcatcher.deluxe.model.types.Progress;
+import com.podcatcher.deluxe.model.types.Suggestion;
 
 import java.util.Date;
 import java.util.Iterator;
@@ -37,7 +38,7 @@ public class LoadPodcastTaskTest extends InstrumentationTestCase {
 
     private CountDownLatch signal = null;
 
-    private List<Podcast> examplePodcasts;
+    private List<Suggestion> examplePodcasts;
 
     @Override
     protected void setUp() throws Exception {
@@ -63,7 +64,7 @@ public class LoadPodcastTaskTest extends InstrumentationTestCase {
         Log.d(Utils.TEST_STATUS, "Testing " + size + " example podcasts");
 
         // Actual example podcasts
-        Iterator<Podcast> podcasts = examplePodcasts.iterator();
+        Iterator<Suggestion> podcasts = examplePodcasts.iterator();
         while (podcasts.hasNext()) {
             Podcast ep = podcasts.next();
             Log.d(Utils.TEST_STATUS, "---- New Podcast (" + ++index + "/" + size +
