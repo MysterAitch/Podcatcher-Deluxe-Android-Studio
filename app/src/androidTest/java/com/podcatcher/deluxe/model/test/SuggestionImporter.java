@@ -27,9 +27,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.podcatcher.deluxe.R;
 import com.podcatcher.deluxe.model.tags.RSS;
+import com.podcatcher.deluxe.model.types.Episode;
 import com.podcatcher.deluxe.model.types.Genre;
 import com.podcatcher.deluxe.model.types.Language;
-import com.podcatcher.deluxe.model.types.Podcast;
 import com.podcatcher.deluxe.model.types.Suggestion;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -40,11 +40,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Creates JSON files for importing podcast suggestions to podcatcher-deluxe.com
@@ -57,39 +59,55 @@ public class SuggestionImporter extends InstrumentationTestCase {
     public final void testCreateImportFile() {
         // final String url = "http://brainsciencepodcast.libsyn.com/rss";
         final Context context = getInstrumentation().getTargetContext();
-        final List<Podcast> oldSuggestions = Utils.getExamplePodcasts(context, 25);
+        final List<Suggestion> oldSuggestions = Utils.getExamplePodcasts(context, 25);
         //oldSuggestions.add(new Podcast(null, url));
-        final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-        final List<Dummy> dummies = new ArrayList<>();
+        final List<JsonDummy> dummies = new ArrayList<>();
 
-        for (Podcast podcast : oldSuggestions) {
-            final SuggestionImport si = new SuggestionImport((Suggestion) podcast);
+        Log.i(TAG, "Setup complete, starting process with " + oldSuggestions.size() + " podcast suggestion(s).");
 
+        for (Suggestion podcast : oldSuggestions) {
+            Log.i(TAG, "Podcast " + podcast.getName() + " started.");
+
+            final SuggestionImport si = new SuggestionImport(podcast);
             Utils.loadAndWait(si);
 
-            // Checks: episodes? Latest episode date?
+            if (si.getEpisodeCount() > 0) {
+                final List<Episode> episodes = si.getEpisodes();
+                Collections.sort(episodes);
 
-            dummies.add(new Dummy(si));
-
-            // Checks: All fields set?
+                if (!episodes.get(0).getPubDate().before(new Date(new Date().getTime() - TimeUnit.DAYS.toMillis(30)))) {
+                    dummies.add(new JsonDummy(si));
+                    Log.d(TAG, "Podcast " + podcast.getName() + " added.");
+                } else
+                    Log.w(TAG, "Podcast " + podcast.getName() + " has no recent epsiodes, skipped.");
+            } else
+                Log.w(TAG, "Podcast " + podcast.getName() + " has no epsiodes, skipped.");
         }
 
-        final File podcastFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS);
+        final File result = writeResultToFile(dummies);
+        Log.i(TAG, "Finished. Resulting JSON written to " + result.getAbsolutePath());
+    }
+
+    private File writeResultToFile(List<JsonDummy> dummies) {
+        final Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+        final File result = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS), "suggestions.json");
         FileOutputStream stream = null;
         try {
-            stream = new FileOutputStream(new File(podcastFolder, "suggestions.json"));
+            stream = new FileOutputStream(result);
             stream.write(gson.toJson(dummies).getBytes());
         } catch (IOException e) {
             Log.w(TAG, "Failed to write JSON file.");
             e.printStackTrace();
         } finally {
             try {
-                stream.close();
+                if (stream != null)
+                    stream.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        Log.i(TAG, "JSON starts with: " + gson.toJson(dummies));
+        return result;
     }
 
     private class SuggestionImport extends Suggestion {
@@ -100,11 +118,13 @@ public class SuggestionImporter extends InstrumentationTestCase {
         Set<String> categories = new HashSet<>();
 
         public SuggestionImport(Suggestion podcast) {
-            super(null, podcast.getUrl());
+            super(podcast.getName(), podcast.getUrl());
 
             // Carry over values
+            description = podcast.getDescription();
             votes = podcast.votes;
             added = podcast.added;
+            setFeatured(podcast.isFeatured());
         }
 
         @Override
@@ -158,7 +178,7 @@ public class SuggestionImporter extends InstrumentationTestCase {
         }
     }
 
-    private class Dummy {
+    private class JsonDummy {
 
         private String title;
         private String keywords;
@@ -174,7 +194,7 @@ public class SuggestionImporter extends InstrumentationTestCase {
         private String added;
         private String path;
 
-        public Dummy(SuggestionImport si) {
+        public JsonDummy(SuggestionImport si) {
             this.title = si.getName();
             this.keywords = si.keywords;
             this.feed = si.getUrl().replace("http://", "feed://");
