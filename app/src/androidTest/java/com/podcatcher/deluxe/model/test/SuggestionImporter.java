@@ -26,6 +26,7 @@ import android.util.Log;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.podcatcher.deluxe.R;
+import com.podcatcher.deluxe.model.EpisodeDownloadManager;
 import com.podcatcher.deluxe.model.tags.RSS;
 import com.podcatcher.deluxe.model.types.Episode;
 import com.podcatcher.deluxe.model.types.Genre;
@@ -38,7 +39,6 @@ import org.xmlpull.v1.XmlPullParserException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -189,14 +189,14 @@ public class SuggestionImporter extends InstrumentationTestCase {
         private Object[] category;
         private String language;
         private String type;
-        private boolean explicit;
+        private String explicit;
         private int votes;
         private String added;
         private String path;
 
         public JsonDummy(SuggestionImport si) {
             this.title = si.getName();
-            this.keywords = si.keywords;
+            this.keywords = si.keywords == null || si.keywords.length() == 0 ? null : si.keywords;
             this.feed = si.getUrl().replace("http://", "feed://");
             this.logo = si.getLogoUrl();
             this.site = si.link != null && si.link.length() > 5 ? si.link : null;
@@ -210,10 +210,10 @@ public class SuggestionImporter extends InstrumentationTestCase {
             } catch (Throwable th) {
                 Log.w(TAG, "Cannot get media type from episodes");
             }
-            this.votes = si.votes + (si.isFeatured() ? 10 : 0);
-            this.explicit = si.isExplicit();
-            this.path = title.replace(" ", "-");
-            this.added = si.added == null ? new SimpleDateFormat("dd MMM yyyy", Locale.US).format(new Date()) : si.added;
+            this.votes = si.votes + (si.isFeatured() ? 10 : 1);
+            this.explicit = si.isExplicit() ? "Yes" : "No";
+            this.path = EpisodeDownloadManager.sanitizeAsFilename(title).replace(" ", "-").replace("%", "");
+            this.added = si.added; // == null ? new SimpleDateFormat("dd MMM yyyy", Locale.US).format(new Date()) : si.added;
         }
     }
 }
