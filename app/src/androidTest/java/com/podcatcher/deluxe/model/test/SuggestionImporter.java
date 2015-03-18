@@ -79,9 +79,9 @@ public class SuggestionImporter extends InstrumentationTestCase {
                     dummies.add(new JsonDummy(si));
                     Log.d(TAG, "Podcast " + podcast.getName() + " added.");
                 } else
-                    Log.w(TAG, "Podcast " + podcast.getName() + " has no recent epsiodes, skipped.");
+                    Log.w(TAG, "Podcast " + podcast.getName() + " has no recent episodes, skipped.");
             } else
-                Log.w(TAG, "Podcast " + podcast.getName() + " has no epsiodes, skipped.");
+                Log.w(TAG, "Podcast " + podcast.getName() + " has no episodes, skipped.");
         }
 
         final File result = writeResultToFile(dummies);
@@ -199,16 +199,19 @@ public class SuggestionImporter extends InstrumentationTestCase {
             this.keywords = si.keywords == null || si.keywords.length() == 0 ? null : si.keywords;
             this.feed = si.getUrl().replace("http://", "feed://");
             this.logo = si.getLogoUrl();
-            this.site = si.link != null && si.link.length() > 5 ? si.link : null;
+            this.site = si.link != null && si.link.length() > 5 ?
+                    si.link.endsWith("/") ? si.link.substring(0, si.link.length() - 1) : si.link : null;
             this.description = si.getDescription();
             this.language = si.language;
             this.category = si.categories.toArray();
+            if (category.length == 0)
+                Log.w(TAG, "Podcast " + title + " has no category");
             try {
                 final String typeString = si.getEpisodes().get(0).getMediaType().split("/")[0];
                 this.type = typeString.substring(0, 1).toUpperCase(Locale.ENGLISH) +
                         typeString.substring(1, 5).toLowerCase(Locale.ENGLISH);
             } catch (Throwable th) {
-                Log.w(TAG, "Cannot get media type from episodes");
+                Log.w(TAG, "Cannot get media type from episodes for " + title);
             }
             this.votes = si.votes + (si.isFeatured() ? 10 : 1);
             this.explicit = si.isExplicit() ? "Yes" : "No";
