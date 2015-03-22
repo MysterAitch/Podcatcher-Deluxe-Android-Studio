@@ -59,7 +59,7 @@ public class SuggestionImporter extends InstrumentationTestCase {
     public final void testCreateImportFile() {
         // final String url = "http://brainsciencepodcast.libsyn.com/rss";
         final Context context = getInstrumentation().getTargetContext();
-        final List<Suggestion> oldSuggestions = Utils.getExamplePodcasts(context, 25);
+        final List<Suggestion> oldSuggestions = Utils.getExamplePodcasts(context);
         //oldSuggestions.add(new Podcast(null, url));
         final List<JsonDummy> dummies = new ArrayList<>();
 
@@ -75,17 +75,20 @@ public class SuggestionImporter extends InstrumentationTestCase {
                 final List<Episode> episodes = si.getEpisodes();
                 Collections.sort(episodes);
 
-                if (!episodes.get(0).getPubDate().before(new Date(new Date().getTime() - TimeUnit.DAYS.toMillis(30)))) {
+                final long ageInDays = (new Date().getTime() - episodes.get(0).getPubDate().getTime())
+                        / TimeUnit.DAYS.toMillis(1);
+
+                if (ageInDays < 90) {
                     dummies.add(new JsonDummy(si));
                     Log.d(TAG, "Podcast " + podcast.getName() + " added.");
                 } else
-                    Log.w(TAG, "Podcast " + podcast.getName() + " has no recent episodes, skipped.");
+                    Log.w(TAG, "Podcast " + podcast.getName() + " latest episode is " + ageInDays + " days old, skipped.");
             } else
                 Log.w(TAG, "Podcast " + podcast.getName() + " has no episodes, skipped.");
         }
 
         final File result = writeResultToFile(dummies);
-        Log.i(TAG, "Finished. Resulting JSON written to " + result.getAbsolutePath());
+        Log.i(TAG, "Finished. Resulting JSON written to " + result.getAbsolutePath() + ", containing " + dummies.size() + " entries.");
     }
 
     private File writeResultToFile(List<JsonDummy> dummies) {
@@ -133,7 +136,7 @@ public class SuggestionImporter extends InstrumentationTestCase {
             final Resources res = getInstrumentation().getTargetContext().getResources();
 
             if (RSS.LINK.equals(tagName) && link == null) // We only want the first one from the header
-                link = normalizeUrl(parser.nextText());
+                link = normalizeUrl(parser.nextText().trim());
             else if (RSS.DESCRIPTION.equals(tagName) && description == null)
                 description = parser.nextText();
             else if ("keywords".equals(tagName) && keywords == null)
@@ -196,9 +199,11 @@ public class SuggestionImporter extends InstrumentationTestCase {
 
         public JsonDummy(SuggestionImport si) {
             this.title = si.getName();
-            this.keywords = si.keywords == null || si.keywords.length() == 0 ? null : si.keywords;
+
+            // TODO Make sure keyword are less than 160 char
+            this.keywords = si.keywords == null || si.keywords.length() == 0 ? null : si.keywords.trim();
             this.feed = si.getUrl().replace("http://", "feed://");
-            this.logo = si.getLogoUrl();
+            this.logo = si.getLogoUrl(); // TODO Warn if no logo found!
             this.site = si.link != null && si.link.length() > 5 ?
                     si.link.endsWith("/") ? si.link.substring(0, si.link.length() - 1) : si.link : null;
             this.description = si.getDescription();
@@ -208,6 +213,7 @@ public class SuggestionImporter extends InstrumentationTestCase {
                 Log.w(TAG, "Podcast " + title + " has no category");
             try {
                 final String typeString = si.getEpisodes().get(0).getMediaType().split("/")[0];
+                // TODO Has be Audio or Video
                 this.type = typeString.substring(0, 1).toUpperCase(Locale.ENGLISH) +
                         typeString.substring(1, 5).toLowerCase(Locale.ENGLISH);
             } catch (Throwable th) {

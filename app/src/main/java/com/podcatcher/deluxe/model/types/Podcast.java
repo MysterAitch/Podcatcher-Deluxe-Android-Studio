@@ -463,14 +463,14 @@ public class Podcast extends FeedEntity implements Comparable<Podcast> {
 
     protected void parseLogo(@NonNull XmlPullParser parser) throws IOException {
         try {
-            // HREF attribute used?
-            if (parser.getAttributeValue("", RSS.HREF) != null)
-                logoUrl = toAbsoluteUrl(parser.getAttributeValue("", RSS.HREF));
-                // URL tag used! We do not override any previous setting, because
-                // the HREF is from the <itunes:image> tag which tends to have
-                // better pics.
+            // Check for href attribute (of <itunes:image> tag)
+            final String href = parser.getAttributeValue("", RSS.HREF);
+
+            if (href != null)
+                logoUrl = toAbsoluteUrl(href);
             else if (logoUrl == null) {
-                // Make sure we start at image tag
+                // URL tag used instead. We do not override any previous setting, because
+                // the href is from the <itunes:image> tag which tends to have better pics.
                 parser.require(XmlPullParser.START_TAG, "", RSS.IMAGE);
 
                 // Look at all start tags of this image
